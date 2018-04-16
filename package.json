@@ -1,0 +1,25 @@
+{
+  "name": "asd-file",
+  "version": "0.1.0",
+  "description": "Library to read and write ASD Files",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha --reporter spec"
+  },
+  "keywords": [
+    "asd"
+  ],
+  "author": "Bryon Bending",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "chai": "^4.1.2",
+    "mocha": "^5.1.0"
+  },
+  "directories": {
+    "example": "examples",
+    "test": "test"
+  },
+  "dependencies": {
+    "chai": "^4.1.2"
+  }
+}
