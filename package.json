@@ -4,7 +4,7 @@
   "description": "Library to read and write ASD Files",
   "main": "index.js",
   "scripts": {
-    "test": "mocha --reporter spec"
+    "test": "mocha --timeout 2000 --reporter spec"
   },
   "keywords": [
     "asd"
