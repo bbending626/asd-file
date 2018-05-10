@@ -47,6 +47,7 @@ var spectrumHeader = module.exports = function(){
     this.swir2Offset = 0;
     this.splice1 = 0;
     this.splice2 = 0;
+    return this;
 };
 
 

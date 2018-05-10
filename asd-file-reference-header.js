@@ -5,4 +5,5 @@ var referenceHeader = module.exports = function(){
     this.referenceTime = 0;
     this.spectrumTime = 0;
     this.referenceDesription = '';
+    return this;
 };

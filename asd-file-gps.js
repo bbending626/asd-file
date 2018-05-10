@@ -15,4 +15,5 @@ var asdFileGps = module.exports = function() {
     this.flags2 = 0;
     this.satellites = [0,0,0,0,0];
     this.filler = [0,0];
+    return this;
 };

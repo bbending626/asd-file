@@ -10,6 +10,7 @@ var asdFileWhen = module.exports = function(){
     this.weekDay = 0;    
     this.daysInYear = 0;  
     this.isDaylighSavings = 0;
+    return this;
 }
 
 asdFileWhen.prototype = {
