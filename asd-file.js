@@ -3,18 +3,23 @@
 
 var fs = require('fs');
 var asdFileVersion = require('./asd-file-version');
-
+var spectrumHeader = require('./asd-file-spectrum-header');
+var referenceHeader = require('./asd-file-reference-header');
 
 var asdFile = module.exports = function(path, spectrum){
     this.path = path;
     this.spectrum = spectrum;
     this.asdFileVersion = new asdFileVersion();
+    this.spectrumHeader = new spectrumHeader();
+    this.spectrumBuffer = null;
+    this.referenceHeader = new referenceHeader();
+    this.referenceBuffer = null;
     return this;
 };
 
 asdFile.prototype = {
-    exists: function(cb){
-        if(cb === null){
+    exists: function(callback){
+        if(callback === null){
             throw new Error('callback not defined');
         }
         var self = this;
@@ -28,12 +33,11 @@ asdFile.prototype = {
             } else {
                 console.log('%d error ', err.code);
             }
-            cb(err, result);
+            callback(err, result);
         });
     },
-
-    read: function(cb){
-        if(cb === null){
+    read: function(callback){
+        if(callback === null){
             throw new Error('callback not defined');
         };
         var self = this;
@@ -43,106 +47,18 @@ asdFile.prototype = {
                 console.log('%s file opened', self.path);
                 if(self._readVersion(fd)){
                     console.log('file version is %s', self.asdFileVersion.versionString);
-                    // comments
-                    self.spectrum.comments = self._readFixedString(fd, 157);
-                    // when
-                    var when = self._readBytes(fd, 18);
-                    // program version
-                    var program_version = self._readInt8(fd);
-                    // file version
-                    var file_version = self._readInt8(fd);
-                    // itime
-                    var itime = self._readInt8(fd);
-                    // dc_corr
-                    var dc_corr = self._readInt8(fd);
-                    // dc_time
-                    var dc_time = self._readDateTime(fd);
-                    // data_type
-                    var data_type = self._readInt8(fd);
-                    // ref time
-                    var ref_time = self._readInt32(fd);
-                    // ch1_wave
-                    var ch1_wave = self._readFloat(fd);
-                    // wave_step
-                    var wave_step = self._readFloat(fd);
-                    // data_format
-                    var data_format = self._readInt8(fd);
-                    // 3 Unused bytes
-                    self._readBytes(fd, 3);
-                    // application
-                    var application = self._readInt8(fd);
-                    // channels
-                    var channels = self._readInt16(fd);
-                    // APP_DATA
-                    self._readBytes(fd, 128);
-                    // GPS
-                    self._readBytes(fd, 56);
-                    // it
-                    var it = self._readInt32(fd);
-                    // fo
-                    var fo = self._readInt16(fd);
-                    // dcc
-                    var dcc = self._readInt16(fd);
-                    // calibration
-                    var calibration = self._readInt16(fd);
-                    // instrument number
-                    var instrument_num = self._readInt16(fd);
-                    // ymin
-                    var ymin = self._readFloat(fd);
-                    // ymax
-                    var ymax = self._readFloat(fd);
-                    // xmin
-                    var xmin = self._readFloat(fd);
-                    // xmax
-                    var xmax = self._readFloat(fd);
-                    // ip_numbits
-                    var ip_numbits = self._readInt16(fd);
-                    // xmode
-                    var xmode = self._readInt8(fd);
-                    // flags
-                    var flags = self._readBytes(fd, 4);
-                    // dc_count
-                    var dc_count = self._readInt16(fd);
-                    // ref_count
-                    var ref_count = self._readInt16(fd);
-                    // sample_count
-                    var sample_count = self._readInt16(fd);
-                    // instrument
-                    var instrument = self._readInt8(fd);
-                    // bulb
-                    var bulb = self._readInt32(fd);
-                    // swir1_gain
-                    var swir1_gain = self._readInt16(fd);
-                    // swir2_gain
-                    var swir2_gain = self._readInt16(fd);
-                    // swir1_offset
-                    var swir1_offset = self._readInt16(fd);
-                    // swir2_offset
-                    var swir2_offset = self._readInt16(fd);
-                    // splice1_wavelength
-                    var splice1_wavelength = self._readFloat(fd);
-                    // splice2_wavelength
-                    var splice2_wavelength = self._readFloat(fd);
-                    // 32 bytes not used
-                    self._readBytes(fd, 32);
-                    // Spectrum buffer
-                    if(self.asdFileVersion.version > self.asdFileVersion.fileVersion.version1){
-                        var spectrumBuffer = self._readFloat64Array(fd, channels);
-                    } else {
-                        var spectrumBuffer = self._readFloat32Array(fd, channels);
+                    // Read the Spectrum Header
+                    self._readSpectrumHeader(fd);
+                    // Read the Spectrum buffer
+                    self._readSpectrumBuffer(fd);
+                    // Multi-Vector file
+                    if(self.asdFileVersion.version >= self.asdFileVersion.fileVersion.version2){
+                        // Reference Header
+                        self._readReferenceHeader(fd);
+                        // Reference Buffer
+                        self._readReferenceBuffer(fd);
                     }
-                    // Reference Header
-                    // Reference Flag
-                    var referenceFlag = self._readBool(fd);
-                    // ReferenceTime
-                    var referenceTime = self._readOADateTime(fd);
-                    // SpectrumTime
-                    var spectrumTime = self._readOADateTime(fd);
-                    // Reference Description
-                    var referenceDesription = self._readVariableString(fd);
-                    // Reference Buffer
-                    var referenceBuffer = self._readFloat64Array(fd, channels);
-
+                    
                 } else {
                     console.log('%s file is not a valid ASD file', self.path);
                     //throw error('%s file is not a valid ASD file', self.path);
@@ -153,7 +69,7 @@ asdFile.prototype = {
                 fs.close(fd);
             }
 
-            cb(err);
+            callback(err);
         });
     },
     _readVersion: function(fd){
@@ -161,6 +77,110 @@ asdFile.prototype = {
         var isValid = this.asdFileVersion.isValid(version);
 
         return isValid;
+    },
+    _readSpectrumHeader: function(fd){
+        // comments
+        this.spectrumHeader.comments = this._readFixedString(fd, 157);
+        // when
+        var when = this._readFileSaveTime(fd);
+        // program version
+        this.spectrumHeader.programVersion = this._readInt8(fd);
+        // file version
+        this.spectrumHeader.fileVersion = this._readInt8(fd);
+        // itime
+        this.spectrumHeader.itime = this._readInt8(fd);
+        // dc_corr
+        this.spectrumHeader.darkCorrected = this._readInt8(fd);
+        // dc_time
+        this.spectrumHeader.darkTime = this._readDateTime(fd);
+        // data_type
+        this.spectrumHeader.dataType = this._readInt8(fd);
+        // ref time
+        this.spectrumHeader.referenceTime = this._readInt32(fd);
+        // ch1_wave
+        this.spectrumHeader.channel1Wavelength = this._readFloat(fd);
+        // wave_step
+        this.spectrumHeader.wavelengthStep = this._readFloat(fd);
+        // data_format
+        this.spectrumHeader.dataFormat = this._readInt8(fd);
+        // 3 Unused bytes
+        this._readBytes(fd, 3);
+        // application
+        this.spectrumHeader.application = this._readInt8(fd);
+        // channels
+        this.spectrumHeader.channels = this._readInt16(fd);
+        // APP_DATA
+        this.appData = this._readAppData(fd);
+        // GPS
+        this.gpsData = this._readGpsData(fd);
+        // it
+        this.spectrumHeader.it = this._readInt32(fd);
+        // fo
+        this.spectrumHeader.fo = this._readInt16(fd);
+        // dcc
+        this.spectrumHeader.dcc = this._readInt16(fd);
+        // calibration
+        this.spectrumHeader.calibration = this._readInt16(fd);
+        // instrument number
+        this.spectrumHeader.instrumentNum = this._readInt16(fd);
+        // ymin
+        this.spectrumHeader.yMin = this._readFloat(fd);
+        // ymax
+        this.spectrumHeader.yMax = this._readFloat(fd);
+        // xmin
+        this.spectrumHeader.xMin = this._readFloat(fd);
+        // xmax
+        this.spectrumHeader.xMax = this._readFloat(fd);
+        // ip_numbits
+        this.spectrumHeader.ipNumBits = this._readInt16(fd);
+        // xmode
+        this.spectrumHeader.xMode = this._readInt8(fd);
+        // flags
+        this.spectrumHeader.flags = this._readBytes(fd, 4);
+        // dc_count
+        this.spectrumHeader.darkCount = this._readInt16(fd);
+        // ref_count
+        this.spectrumHeader.referenceCount = this._readInt16(fd);
+        // sample_count
+        this.spectrumHeader.sampleCount = this._readInt16(fd);
+        // instrument
+        this.spectrumHeader.instrument = this._readInt8(fd);
+        // bulb
+        this.spectrumHeader.bulb = this._readInt32(fd);
+        // swir1_gain
+        this.spectrumHeader.swir1Gain = this._readInt16(fd);
+        // swir2_gain
+        this.spectrumHeader.swir2Gain = this._readInt16(fd);
+        // swir1_offset
+        this.spectrumHeader.swir1Offset = this._readInt16(fd);
+        // swir2_offset
+        this.spectrumHeader.swir2Offset = this._readInt16(fd);
+        // splice1_wavelength
+        this.spectrumHeader.splice1 = this._readFloat(fd);
+        // splice2_wavelength
+        this.spectrumHeader.splice2 = this._readFloat(fd);
+        // 32 bytes not used
+        this._readBytes(fd, 32);
+    },
+    _readSpectrumBuffer: function(fd){
+        if(this.asdFileVersion.version > this.asdFileVersion.fileVersion.version1){
+            var spectrumBuffer = this._readFloat64Array(fd, this.spectrumHeader.channels);
+        } else {
+            var spectrumBuffer = this._readFloat32Array(fd, this.spectrumHeader.channels);
+        }
+    },
+    _readReferenceHeader: function(fd){
+        // Reference Flag
+        this.referenceHeader.referenceFlag = this._readBool(fd);
+        // ReferenceTime
+        this.referenceHeader.referenceTime = this._readOADateTime(fd);
+        // SpectrumTime
+        this.referenceHeader.spectrumTime = this._readOADateTime(fd);
+        // Reference Description
+        this.referenceHeader.referenceDesription = this._readVariableString(fd);
+    },
+    _readReferenceBuffer: function(fd){
+        this.referenceBuffer = this._readFloat64Array(fd, this.spectrumHeader.channels);
     },
     _readBytes: function(fd, size){
         var buffer = new Buffer(size);
@@ -279,6 +299,56 @@ asdFile.prototype = {
         var dateTime = new Date((value * 1000) + +epoch - (timeZoneOffset() * 60 * 1000));
         
         return dateTime;
+    },
+    _readFileSaveTime: function(fd){
+        var dataView = this._getDataView(fd, 18);
+        this.spectrumHeader.when.seconds = dataView.getInt16(0, true);     
+        this.spectrumHeader.when.minute = dataView.getInt16(2, true);     
+        this.spectrumHeader.when.hour = dataView.getInt16(4, true); 
+        this.spectrumHeader.when.day = dataView.getInt16(6, true);   
+        this.spectrumHeader.when.month = dataView.getInt16(8, true);     
+        this.spectrumHeader.when.year = dataView.getInt16(10, true);
+        this.spectrumHeader.when.weekDay = dataView.getInt16(12, true);    
+        this.spectrumHeader.when.daysInYear = dataView.getInt16(14, true);  
+        this.spectrumHeader.when.isDaylighSavings = dataView.getInt16(16, true);
+        console.log(this.spectrumHeader.when.getSaveDateTime());
+    },
+    _readAppData: function(fd){
+        const size = 128;
+        var dataView = this._getDataView(fd, size);
+        var value = '';
+        for(var i = 0; i < size; i++){
+            var char = dataView.getUint8(i);
+            if(char == 0x00){
+                break;
+            } else {
+                value += String.fromCharCode(char);
+            };
+        };
+
+        return value;
+    },
+    _readGpsData: function(fd){
+        var dataView = this._getDataView(fd, 56);
+        this.spectrumHeader.gpsData.true_heading = dataView.getFloat64(0, true);
+        this.spectrumHeader.gpsData.speed = dataView.getFloat64(8, true);
+        this.spectrumHeader.gpsData.latitude = dataView.getFloat64(16, true);
+        this.spectrumHeader.gpsData.longitude = dataView.getFloat64(24, true);
+        this.spectrumHeader.gpsData.altitude = dataView.getFloat64(32, true);
+        this.spectrumHeader.gpsData.lock = dataView.getInt16(40, true);
+        this.spectrumHeader.gpsData.hardware_mode = dataView.getInt8(42);
+        this.spectrumHeader.gpsData.ss = dataView.getInt8(43);
+        this.spectrumHeader.gpsData.mm = dataView.getInt8(44);
+        this.spectrumHeader.gpsData.hh = dataView.getInt8(45);
+        this.spectrumHeader.gpsData.flags1 = dataView.getInt8(46);
+        this.spectrumHeader.gpsData.flags2 = dataView.getInt16(47);
+        this.spectrumHeader.gpsData.satellites[0] = dataView.getInt8(49);
+        this.spectrumHeader.gpsData.satellites[1] = dataView.getInt8(50);
+        this.spectrumHeader.gpsData.satellites[2] = dataView.getInt8(51);
+        this.spectrumHeader.gpsData.satellites[3] = dataView.getInt8(52);
+        this.spectrumHeader.gpsData.satellites[4] = dataView.getInt8(53);
+        this.spectrumHeader.gpsData.filler[0] = dataView.getInt8(54);
+        this.spectrumHeader.gpsData.filler[1] = dataView.getInt8(55);
     },
     _getDataView: function(fd, size){
         var buffer = new Buffer(size);

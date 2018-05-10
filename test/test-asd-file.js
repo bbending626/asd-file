@@ -24,9 +24,18 @@ describe('#asdFile', function(){
         });
     });
 
+    it('should have a swir1 gain = 107', function(){
+        var file = new asdFile('./test/support/files/reflectance00000.asd', spectrum);
+        file.read(function(err){
+            if(err != null){
+                expect(file.spectrumHeader.swir1_gain).to.equal(107);
+            }
+        });
+    });
+
     it('should have a reference header', function(){
-        var reflectanceFile = new asdFile('./test/support/files/reflectance00000.asd', spectrum);
-        reflectanceFile.read(function(err){
+        var file = new asdFile('./test/support/files/reflectance00000.asd', spectrum);
+        file.read(function(err){
             //
         });
     });
@@ -65,7 +74,7 @@ describe('#asdFile', function(){
 
     it('should return rawDN for comments', function(){
         file.read(function(err){
-            expect(file.spectrum.comments).to.equal('rawDN');
+            expect(file.spectrumHeader.comments).to.equal('rawDN');
         });
     });
 

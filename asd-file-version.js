@@ -1,10 +1,6 @@
 'use strict'
 
 var constants = require('./constants');
-//const VERSION_NOT_VALID = 'Invalid';
-//const VERSION_1_STR = 'ASD';
-//const VERSION_2_STR = 'as2';
-//const VERSION_7_STR = 'as7';
 
 var asdFileVersion = module.exports = function(){
     this.versionString = constants.VERSION_NOT_VALID;
@@ -25,7 +21,6 @@ asdFileVersion.prototype = {
         version7:7,
         version8:8,
     },
-
     isValid: function(value){
         var self = this;
         if(value === constants.VERSION_1){
