@@ -3,10 +3,10 @@
 var chai = require('chai'),
     expect = chai.expect,
     assert = chai.assert;
-var asdFile = require('../asd-file');
-var spectrum = require('../spectrum');
-var asdFileVersion = require('../asd-file-version');
-var constants = require('../constants');
+var asdFile = require('../src/asd-file');
+var spectrum = require('../src/spectrum');
+var asdFileVersion = require('../src/asd-file-version');
+var constants = require('../src/constants');
 
 var spectrum = new spectrum();
 var file = new asdFile('./test/support/files/DN00001.asd', spectrum); 
