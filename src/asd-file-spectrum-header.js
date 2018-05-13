@@ -6,9 +6,7 @@ var asdFileGps = require('./asd-file-gps');
 
 var spectrumHeader = module.exports = function(){
     this.co = constants.VERSION_NOT_VALID;
-    this.serialNumber = 0
-    this.calibrationNumber = 0;
-    this.comment = '';
+    this.comments = '';
     this.when = new asdFileWhen();
     this.programVersion = 0;
     this.fileVersion = 0;
@@ -20,6 +18,7 @@ var spectrumHeader = module.exports = function(){
     this.channel1Wavelength = 0;
     this.wavelengthStep = 0;
     this.dataFormat = 0;
+    this.unused1 = 0;
     this.application = 0;
     this.channels = 0;
     this.appData = '';
@@ -28,7 +27,7 @@ var spectrumHeader = module.exports = function(){
     this.it = 0;
     this.dcc = 0;
     this.calibration = 0;
-    this.instrumentNumber = 0;
+    this.instrumentNum = 0;
     this.yMin = 0;
     this.yMax = 0;
     this.xMin = 0;
@@ -47,6 +46,7 @@ var spectrumHeader = module.exports = function(){
     this.swir2Offset = 0;
     this.splice1 = 0;
     this.splice2 = 0;
+    this.unused2 = 0;
     return this;
 };
 

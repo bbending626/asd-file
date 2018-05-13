@@ -11,7 +11,7 @@ var asdFileWhen = module.exports = function(){
     this.daysInYear = 0;  
     this.isDaylighSavings = 0;
     return this;
-}
+};
 
 asdFileWhen.prototype = {
     getSaveDateTime: function(){

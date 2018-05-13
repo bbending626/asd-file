@@ -7,7 +7,8 @@
     "test": "mocha --timeout 2000 --reporter spec"
   },
   "keywords": [
-    "asd"
+    "asd",
+    "asd file"
   ],
   "author": "Bryon Bending",
   "license": "Apache-2.0",
@@ -16,7 +17,7 @@
     "mocha": "^5.1.0"
   },
   "directories": {
-    "example": "examples",
+    "src": "src",
     "test": "test"
   },
   "dependencies": {
